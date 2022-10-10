@@ -1,0 +1,147 @@
+<html>
+
+<body>
+    <pre>MS-50/70 patch:</pre>
+    <textarea id="source_text" name="source_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Hex input ..." autofocus=""></textarea><br />
+    <pre>Unpacked:</pre>
+    <textarea id="unpacked_text" name="unpacked_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Unpacked output..." autofocus=""></textarea><br />
+    <pre>Unpacked, modified for G1xon:</pre>
+    <textarea id="g1xon_unpacked_text" name="g1xon_unpacked_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..." autofocus=""></textarea><br />
+    <pre>G1xon patch:</pre>
+    <textarea id="g1xon_patch_text" name="g1xon_patch_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..." autofocus=""></textarea>
+    <br /><br />
+    <pre id="message"></pre><br />
+    <script type="text/javascript">
+function hexarray2string(hexarray)
+{
+    return Array.from(hexarray, function(byte)
+    {
+        return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+    }).join(' ');
+};
+
+function hexarray2string_lined(hexarray, line_length)
+{
+    let lined_string = '';
+    let lines = Math.floor(hexarray.length / line_length);
+    for (let i = 0; i <= lines; i++)
+    {
+        lined_string += hexarray2string(hexarray.slice(i * line_length, i * line_length + line_length)) + '\r\n';
+    }
+    return lined_string;
+}
+
+function unpack(packed)
+{
+    // Unpack, as in https://github.com/shooking/ZoomPedalFun/blob/main/MS70CDR/unpack.cpp
+    let loop = -1;
+    let hibits = 0;
+    let unpacked = [];
+    for (let i = 5; i < (packed.length - 1); i++)
+    {
+        let byt = packed[i];
+        if (loop != -1)
+        {
+            let p = Math.pow(2, loop);
+            if (hibits & p)
+            {
+                byt = 0x80 + byt;
+            }
+            unpacked.push(byt);
+            loop = loop - 1;
+        }
+        else
+        {
+            hibits = byt;
+            loop = 6;
+        }
+    }
+    return unpacked;
+}
+
+function pack(unpacked)
+{
+    let packed = [];
+
+    let numloops = Math.floor(unpacked.length / 7) + ((unpacked.length % 7) > 0 ? 1 : 0);
+
+    for (let i = 0; i < numloops; i++) {
+        packed.push(0x0); // for hibits
+        for (let j = 0; j < Math.min(7, unpacked.length - i * 7); j++) {
+            let byteindex = i * 7 + j;
+            let lowbyte = unpacked[byteindex] & 0x7F;
+            packed.push(lowbyte);
+            packed[i * 8] |= ((unpacked[byteindex] & 0x80) >>> (j + 1));
+        }
+    }
+    
+    return packed;
+}
+
+const source_text = document.getElementById('source_text');
+const unpacked_text = document.getElementById('unpacked_text');
+const g1xon_unpacked_text = document.getElementById('g1xon_unpacked_text');
+const g1xon_patch_text = document.getElementById('g1xon_patch_text');
+const message = document.getElementById('message');
+
+const patchlength = 18;
+
+const inputHandler = function(e)
+{
+    message.innerHTML = "";
+    // Remove antything that is not HEX string
+    let cleaninput = e.target.value.replace(/[^0-9a-f]/gi, '')
+    // Convert input patch to number array for easier manipulation
+    let inputpatch = []
+    for (let i = 0; i < cleaninput.length; i += 2) inputpatch.push(parseInt(cleaninput.substr(i, 2), 16));
+
+    let unpacked = unpack(inputpatch);
+
+    // Generate HEX string with patch
+    unpacked_text.value = hexarray2string_lined(unpacked, patchlength);
+
+    // Convert patch to G1xon!
+    let g1xon_unpacked = [];
+    // Assume 6 patches, take first 5
+    for (let i = 0; i < 5; i++)
+    {
+        const unpacked_index = i * patchlength;
+        let carry = 0;
+        let param = 0;
+        // copy 3 bytes
+        g1xon_unpacked = g1xon_unpacked.concat(unpacked.slice(unpacked_index, unpacked_index + 3));
+        // 4th byte: lower 4 bits unchanged, multiply high bits by 2
+        param = (unpacked[unpacked_index + 3] & 0xf0) << 1;
+        carry = (param & 0xf00) >>> 8;
+        g1xon_unpacked.push((unpacked[unpacked_index + 3] & 0x0f) + param);
+        // next bytes: multiply by 2, carry overflow to next byte
+        for (let j = 4; j < patchlength; j++)
+        {
+            param = unpacked[unpacked_index + j] << 1;
+            g1xon_unpacked.push((param & 0xff) + carry);
+            carry = (param & 0xf00) >>> 8;
+        }
+    }
+    
+    // add a constant - numfx, volume, pedal assignment none and some other stuff (unknown)
+    g1xon_unpacked = g1xon_unpacked.concat([(unpacked[109] >>> 2) << 5 /*numfx*/, 0x64 /*volume*/, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+    
+    // copy patch name - last 11 bytes of patch, a null-terminated string
+    g1xon_unpacked = g1xon_unpacked.concat(unpacked.slice(-11));
+
+    g1xon_unpacked_text.value = hexarray2string_lined(g1xon_unpacked, patchlength);
+    
+    // Pack, add header and ending byte
+    let g1xon_packed = [0xf0, 0x52, 0x00, 0x64, 0x28].concat(pack(g1xon_unpacked), [0xf7]);
+    
+    // Generate HEX string with patch
+    g1xon_patch_text.value = hexarray2string(g1xon_packed);
+}
+source_text.addEventListener('input', inputHandler);
+source_text.addEventListener('propertychange', inputHandler); // for IE8
+// Firefox/Edge18-/IE9+ don’t fire on <select><option>
+// source_text.addEventListener('change', inputHandler);  
+    </script>
+</body>
+
+</html>
