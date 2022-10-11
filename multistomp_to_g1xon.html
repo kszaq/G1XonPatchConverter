@@ -1,17 +1,21 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Zoom Patch Converter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+</head>
 <body>
     <pre>MS-50/70 patch:</pre>
-    <textarea id="source_text" name="source_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Hex input ..." autofocus=""></textarea><br />
+    <textarea id="source_text" name="source_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Hex input ..." autofocus=""></textarea><br>
     <pre>Unpacked:</pre>
-    <textarea id="unpacked_text" name="unpacked_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Unpacked output..." autofocus=""></textarea><br />
+    <textarea id="unpacked_text" name="unpacked_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Unpacked output..."></textarea><br>
     <pre>Unpacked, modified for G1xon:</pre>
-    <textarea id="g1xon_unpacked_text" name="g1xon_unpacked_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..." autofocus=""></textarea><br />
+    <textarea id="g1xon_unpacked_text" name="g1xon_unpacked_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..."></textarea><br>
     <pre>G1xon patch:</pre>
-    <textarea id="g1xon_patch_text" name="g1xon_patch_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..." autofocus=""></textarea>
-    <br /><br />
-    <pre id="message"></pre><br />
-    <script type="text/javascript">
+    <textarea id="g1xon_patch_text" name="g1xon_patch_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..."></textarea>
+    <br><br>
+    <pre id="message"></pre><br>
+    <script>
 function hexarray2string(hexarray)
 {
     return Array.from(hexarray, function(byte)
