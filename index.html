@@ -121,10 +121,10 @@ const inputHandler = function(e)
         let param = 0;
         // copy 3 bytes
         g1xon_unpacked = g1xon_unpacked.concat(unpacked.slice(unpacked_index, unpacked_index + 3));
-        // 4th byte: lower 4 bits unchanged, multiply high bits by 2
-        param = (unpacked[unpacked_index + 3] & 0xf0) << 1;
+        // 4th byte: lower 5 bits unchanged, multiply high bits by 2
+        param = (unpacked[unpacked_index + 3] & 0xe0) << 1;
         carry = (param & 0xf00) >>> 8;
-        g1xon_unpacked.push((unpacked[unpacked_index + 3] & 0x0f) + param);
+        g1xon_unpacked.push((unpacked[unpacked_index + 3] & 0x1f) + param);
         // next bytes: multiply by 2, carry overflow to next byte
         for (let j = 4; j < patchlength; j++)
         {
