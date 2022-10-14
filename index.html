@@ -113,8 +113,20 @@ const inputHandler = function(e)
 
     // Convert patch to G1xon!
     let g1xon_unpacked = [];
+    // Check number of effects
+    let numfx = (unpacked[109] >>> 2);
+    // If 6 effects and first if Line Sel, remove Line Sel; otherwise remove last
+    let startfx = 0;
+    if (numfx == 6)
+    {
+        if (unpacked[0] == 0x11 && unpacked[1] == 0x00 && unpacked[2] == 0x00 && (unpacked[3] & 0x1F) == 0x4)
+        {
+            startfx = 1;
+        }
+    }
+    numfx = Math.min(numfx, 5);
     // Assume 6 patches, take first 5
-    for (let i = 0; i < 5; i++)
+    for (let i = (0 + startfx); i < (5 + startfx); i++)
     {
         const unpacked_index = i * patchlength;
         let carry = 0;
@@ -135,7 +147,7 @@ const inputHandler = function(e)
     }
     
     // add a constant - numfx, volume, pedal assignment none and some other stuff (unknown)
-    g1xon_unpacked = g1xon_unpacked.concat([(unpacked[109] >>> 2) << 5 /*numfx*/, 0x64 /*volume*/, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+    g1xon_unpacked = g1xon_unpacked.concat([numfx << 5 /*numfx*/, 0x64 /*volume*/, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
     
     // copy patch name - last 11 bytes of patch, a null-terminated string
     g1xon_unpacked = g1xon_unpacked.concat(unpacked.slice(-11));
