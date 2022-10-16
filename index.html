@@ -5,9 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
 </head>
 <body>
+    <pre> <label for="device">Choose your device:</label>
+    <select name="device" id="device" onchange="select_device()">
+      <option value="64">G1Xon</option>
+      <option value="63">G1on</option>
+      <option value="66">B1Xon</option>
+      <option value="65">B1on</option>
+    </select></pre>
     <pre>For sending SysEx, you can use MIDI-OX, Pocket MIDI or any other software you like.<br>
     (0) Use Zoom Effect Manager to flash all patches you need<br>
-    (1) Send <b>f0 52 00 64 50 f7</b> to enable Editor Mode (required once per pedal startup)<br>
+    (1) Send <b>f0 52 00 <span id="dev_hex">64</span> 50 f7</b> to enable Editor Mode (required once per pedal startup)<br>
     (2) By hand, select preset you want to replace<br>
     (3) Paste Multistomp patch below, use copy modified patch and send it to your G1Xon</pre>
     <pre>MS-50/70 patch:</pre>
@@ -18,7 +25,7 @@
     <pre>Unpacked, modified for G1xon:</pre>
     <textarea id="g1xon_unpacked_text" name="g1xon_unpacked_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..." style="max-width:95%"></textarea><br>
     </div>
-    <pre>G1xon patch:</pre>
+    <pre><span id="dev_txt">G1xon</span> patch:</pre>
     <textarea id="g1xon_patch_text" name="g1xon_patch_text" rows="6" cols="60" class="form-control" spellcheck="false" placeholder="Repacked output..." style="max-width:95%"></textarea>
     <script>
 function hexarray2string(hexarray)
@@ -91,13 +98,14 @@ const source_text = document.getElementById('source_text');
 const unpacked_text = document.getElementById('unpacked_text');
 const g1xon_unpacked_text = document.getElementById('g1xon_unpacked_text');
 const g1xon_patch_text = document.getElementById('g1xon_patch_text');
+const device = document.getElementById('device');
 
 const patchlength = 18;
 
-const inputHandler = function(e)
+function inputHandler()
 {
     // Remove antything that is not HEX string
-    let cleaninput = e.target.value.replace(/[^0-9a-f]/gi, '')
+    let cleaninput = source_text.value.replace(/[^0-9a-f]/gi, '')
     // Convert input patch to number array for easier manipulation
     let inputpatch = []
     for (let i = 0; i < cleaninput.length; i += 2) inputpatch.push(parseInt(cleaninput.substr(i, 2), 16));
@@ -151,7 +159,7 @@ const inputHandler = function(e)
     g1xon_unpacked_text.value = hexarray2string_lined(g1xon_unpacked, patchlength);
     
     // Pack, add header and ending byte
-    let g1xon_packed = [0xf0, 0x52, 0x00, 0x64, 0x28].concat(pack(g1xon_unpacked), [0xf7]);
+    let g1xon_packed = [0xf0, 0x52, 0x00, '0x' + device.options[device.selectedIndex].value, 0x28].concat(pack(g1xon_unpacked), [0xf7]);
     
     // Generate HEX string with patch
     g1xon_patch_text.value = hexarray2string(g1xon_packed);
@@ -159,7 +167,14 @@ const inputHandler = function(e)
 source_text.addEventListener('input', inputHandler);
 source_text.addEventListener('propertychange', inputHandler); // for IE8
 // Firefox/Edge18-/IE9+ don’t fire on <select><option>
-// source_text.addEventListener('change', inputHandler);  
+// source_text.addEventListener('change', inputHandler);
+
+function select_device()
+{
+    document.getElementById('dev_hex').innerHTML = device.options[device.selectedIndex].value;
+    document.getElementById('dev_txt').innerHTML = device.options[device.selectedIndex].innerHTML;
+    inputHandler();
+}
     </script>
 </body>
 
