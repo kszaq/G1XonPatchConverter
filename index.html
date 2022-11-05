@@ -119,11 +119,12 @@ function inputHandler()
     let g1xon_unpacked = [];
     // Check number of effects
     let numfx = (unpacked[109] >>> 2);
-    // If 6 effects and first if Line Sel, remove Line Sel; otherwise remove last
+    // If 6 effects and first is Line Sel or Bypass, remove first effect; otherwise remove last
     let startfx = 0;
     if (numfx == 6)
     {
-        if (unpacked[0] == 0x11 && unpacked[1] == 0x00 && unpacked[2] == 0x00 && (unpacked[3] & 0x1F) == 0x4)
+        if ((unpacked[0] == 0x11 && unpacked[1] == 0x00 && unpacked[2] == 0x00 && (unpacked[3] & 0x1F) == 0x4)
+        || (unpacked[0] == 0x01 && unpacked[1] == 0x00 && unpacked[2] == 0x00 && (unpacked[3] & 0x1F) == 0x0))
         {
             startfx = 1;
         }
